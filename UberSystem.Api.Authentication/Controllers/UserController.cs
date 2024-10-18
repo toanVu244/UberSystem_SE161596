@@ -117,5 +117,31 @@ namespace UberSystem.Api.Authentication.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
+        {
+            try
+            {
+                var loginResult = await userService.Login(loginRequest);
+                if (loginResult != null)
+                {
+                    if (loginResult.Role == "Driver")
+                    {
+                        var userId = loginResult.UserId;
+
+                        var driverService = HttpContext.RequestServices.GetService<DriverDataSenderService>();
+                        driverService?.ReceiveUserId(userId);
+                    }
+                    return Ok(loginResult);
+                }
+
+                return Unauthorized("Invalid credentials");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
