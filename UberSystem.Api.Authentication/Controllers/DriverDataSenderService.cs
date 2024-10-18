@@ -17,24 +17,6 @@ namespace UberSystem.Api.Authentication.Controllers
         {
             _serviceProvider = serviceProvider;
         }
-        //public void ReceiveUserId(long userId)
-        //{
-        //    Console.WriteLine($"Received userId: {userId}");
-        //    Interlocked.Exchange(ref _userId, userId); // Cập nhật an toàn
-        //    Console.WriteLine($"Updated _userId: {_userId}");
-        //    if (_userId != 0 && _timer == null)
-        //    {
-        //        _timer = new Timer(SendData, null, TimeSpan.Zero, TimeSpan.FromSeconds(15));
-        //        Console.WriteLine("Timer started.");
-        //    }
-        //}
-
-        //public Task StartAsync(CancellationToken cancellationToken)
-        //{
-        //    Console.WriteLine("Starting DriverDataSenderService...");
-        //    _timer = new Timer(SendData, null, TimeSpan.Zero, TimeSpan.FromSeconds(15));
-        //    return Task.CompletedTask;
-        //}
         public Task StartAsync(CancellationToken cancellationToken)
         {
             Console.WriteLine("Starting DriverDataSenderService...");

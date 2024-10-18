@@ -61,7 +61,6 @@ namespace UberSystem.Service
             return code;
         }
 
-
         public async Task<String> Add(AddUserRequest userRequest, string? code)
         {
             var checkEmail = await userRepository.GetUserByEmail(userRequest.Email);
@@ -226,17 +225,6 @@ namespace UberSystem.Service
 
         public async Task<TokenModel> Login(LoginRequest loginRequest)
         {
-            //var user = await userRepository.Login(loginRequest.UserName, loginRequest.Password);
-            //if (user == null)
-            //{
-            //    throw new Exception("Email or password is wrong!!!");
-            //}
-            //else if (!user.Status)
-            //{
-            //    throw new Exception("Unverified account!!!");
-            //}
-            //var token = await GenerateToken(user);
-            //return token;
             var user = await userRepository.Login(loginRequest.UserName, loginRequest.Password);
             if (user == null)
             {
@@ -409,6 +397,12 @@ namespace UberSystem.Service
         {
             var dateTimeInterval = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(utcExpireDate).ToUniversalTime();
             return dateTimeInterval;
+        }
+
+        public async Task<List<User>> GetAll()
+        {
+            var listUser = await userRepository.GetAllUser();
+            return listUser;
         }
     }
 }

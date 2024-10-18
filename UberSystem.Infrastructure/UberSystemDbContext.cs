@@ -37,7 +37,7 @@ public partial class UberSystemDbContext : DbContext
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Data Source=.;Initial Catalog=UberSystemDb;Persist Security Info=True;User ID=sa;Password=admin12345;MultipleActiveResultSets=True;TrustServerCertificate=True");
+        => optionsBuilder.UseSqlServer("Data Source=.;Initial Catalog=UberSystemDb;Persist Security Info=True;User ID=sa;Password=admin12345;MultipleActiveResultSets=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

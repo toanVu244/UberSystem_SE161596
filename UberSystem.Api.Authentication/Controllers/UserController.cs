@@ -1,21 +1,21 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
-using System.Net;
+using Microsoft.AspNetCore.OData.Formatter;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Routing.Controllers;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Threading.Tasks;
+using UberSystem.Domain.Entities;
 using UberSystem.Domain.Interfaces.Services;
 using UberSystem.Domain.Models;
 using UberSystem.Domain.Request;
-using UberSystem.Api.Authentication.Controllers;
-//using UberSystem.Api.Driver.Controllers;
 
 namespace UberSystem.Api.Authentication.Controllers
 {
-    
     [ApiController]
-    [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    [Route("odata/[controller]")]
+    public class UserController : ODataController
     {
         private readonly IUserService userService;
 
@@ -24,13 +24,53 @@ namespace UberSystem.Api.Authentication.Controllers
             this.userService = userService;
         }
 
-
         /// <summary>
-        /// Verifies the user's email based on the provied token
+        /// Get user with OData query
         /// </summary>
         /// <response code="200">Return successfully</response>
-        [HttpPost("Sign Up")]
-        public async Task<IActionResult> AddUser([FromBody] AddUserRequest userRequest, [FromQuery] string? code)
+        [EnableQuery]
+        [HttpGet]
+        [Authorize(Policy = "CustomerPolicy")]
+        public async Task<ActionResult<IEnumerable<User>>> GetAll()
+        {
+            try
+            {
+                var users = await userService.GetAll();
+                return Ok(users.AsQueryable());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+
+        /// <summary>
+        /// Get user by email with OData query
+        /// </summary>
+        /// <response code="200">Return successfully</response>
+        [EnableQuery]
+        [HttpGet("odata/User({key})")]
+        public async Task<ActionResult<User>> GetUser([FromRoute] int key)
+        {
+            if (key == null)
+            {
+                return BadRequest("Key is not null!!!");
+            }
+            var userList = await userService.GetAll();
+            var user = userList.SingleOrDefault(d => d.Id == key);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(user);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> Post([FromBody] AddUserRequest userRequest, [FromQuery] string? code)
         {
             if (userRequest == null)
             {
@@ -38,7 +78,7 @@ namespace UberSystem.Api.Authentication.Controllers
             }
             try
             {
-                return Ok(await userService.Add(userRequest, code));
+                return Created(await userService.Add(userRequest, code));
             }
             catch (Exception ex)
             {
@@ -46,101 +86,17 @@ namespace UberSystem.Api.Authentication.Controllers
             }
         }
 
-
-        /// <summary>
-        /// Get user based on email
-        /// </summary>
-        /// <response code="200">Return successfully</response>
-        [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetUser([FromQuery] string email)
-        {
-
-            if (string.IsNullOrEmpty(email))
-            {
-                return BadRequest("Email is not null!!!");
-            }
-            var user = await userService.FindByEmail(email);
-            if (user != null)
-            {
-                return Ok(user);
-            }
-            else
-            {
-                return NotFound("Email is not exist!!!");
-            }
-
-        }
-
-        /// <summary>
-        /// Delete user by user id
-        /// </summary>
-        /// <response code="200">Return successfully</response>
-        [HttpDelete]
-        public async Task<IActionResult> DeleteUser([FromQuery] long id)
-        {
-            try
-            {
-                await userService.Delete(id);
-                return Ok("Delete user is successs!!!");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Update user by user id
-        /// </summary>
-        /// <response code="200">Return successfully</response>
         [HttpPut]
-        public async Task<IActionResult> UpdateUser([FromBody] UserRequest userRequest)
+        public async Task<ActionResult> Put([FromQuery] int key, [FromBody]UserRequest userRequest)
         {
+            if (userRequest == null)
+            {
+                return BadRequest("Invalid user data.");
+            }
             try
             {
                 await userService.Update(userRequest);
-                return Ok("Update user is success!!!");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-
-        }
-
-
-        /// <summary>
-        /// User login based on username and password
-        /// </summary>
-        /// <response code="200">Return successfully</response>
-        [HttpPost("Login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
-        {
-            //try
-            //{
-            //    return Ok(await userService.Login(loginRequest));
-            //}
-            //catch (Exception ex)
-            //{
-            //    return StatusCode(500, $"Internal server error: {ex.Message}");
-            //}
-            try
-            {
-                var loginResult = await userService.Login(loginRequest);
-                if (loginResult != null)
-                {
-                    if (loginResult.Role == "Driver")
-                    {
-                        var userId = loginResult.UserId;
-
-                        var driverService = HttpContext.RequestServices.GetService<DriverDataSenderService>();
-                        driverService?.ReceiveUserId(userId);
-                    }
-                    return Ok(loginResult);
-                }
-
-                return Unauthorized("Invalid credentials");
+                return Ok("User updated successfully!!!");
             }
             catch (Exception ex)
             {
@@ -148,12 +104,13 @@ namespace UberSystem.Api.Authentication.Controllers
             }
         }
 
-        [HttpPost("RenewToken")]
-        public async Task<IActionResult> RenewToken(TokenModel tokenModel)
+        [HttpDelete]
+        public async Task<ActionResult> Delete([FromQuery]int key)
         {
             try
             {
-                return Ok(await userService.RenewToken(tokenModel));
+                await userService.Delete(key);
+                return Ok("User deleted successfully!!!");
             }
             catch (Exception ex)
             {

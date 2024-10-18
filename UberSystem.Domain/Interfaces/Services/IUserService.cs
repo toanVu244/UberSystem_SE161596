@@ -8,6 +8,7 @@ namespace UberSystem.Domain.Interfaces.Services
 	public interface IUserService
 	{
         Task<User> FindByEmail(string  email);
+        Task<List<User>> GetAll();
         Task Update(UserRequest userRequest);
         Task<string> Add(AddUserRequest userRequest, string? code);
         //Task<bool> Login(User user);

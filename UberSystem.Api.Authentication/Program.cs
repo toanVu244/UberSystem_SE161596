@@ -5,12 +5,27 @@ using UberSystem.Api.Authentication.Extensions;
 using UberSystem.Domain.Interfaces.Services;
 using UberSystem.Domain.Repository;
 using UberSystem.Service;
+using Microsoft.AspNetCore.OData;
+using Microsoft.OData.ModelBuilder;
+using Microsoft.OData.Edm;
+using UberSystem.Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+IEdmModel GetEdmModel()
+{
+    var odataBuilder = new ODataConventionModelBuilder();
 
-builder.Services.AddControllers();
+    // Định nghĩa các entity set cho OData
+    odataBuilder.EntitySet<User>("Users");  // Users là tập thực thể
+
+    return odataBuilder.GetEdmModel();
+}
+
+builder.Services.AddControllers().AddOData(options =>
+        options.Select().Filter().Expand().OrderBy().SetMaxTop(100).Count()
+        .AddRouteComponents("odata", GetEdmModel()));
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 104857600; // Giới hạn kích thước file (100 MB)
@@ -64,7 +79,13 @@ builder.Services.AddCors(options => options.AddPolicy("MyCor", builder =>
 {
     builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
 }));
-
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CustomerPolicy", policy =>
+        policy.RequireRole("Customer"));
+    options.AddPolicy("DriverPolicy", policy =>
+        policy.RequireRole("Driver"));
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -75,10 +96,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("MyCor");
-app.MapControllers();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 app.Run();
